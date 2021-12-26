@@ -23,24 +23,8 @@ warnings.filterwarnings('ignore')
 
 
 
-
+# 데이터 로드
 data_path = "/Users/yechansmacbook/Desktop/스터디/kmrd/kmr_dataset/datafile/kmrd-small"
-
-def read_data(data_path):
-    df = pd.read_csv(os.path.join(data_path, 'rates.csv'))
-    train_df, val_df = train_test_split(df, test_size=0.2, random_state=1234, shuffle=True)
-    return train_df, val_df
-
-train_df, val_df = read_data(data_path)
-
-print(train_df.shape)
-print(train_df.head())
-
-
-
-#============================================================================================================================================
-
-
 
 # 데이터 불러오기
 movies_df = pd.read_csv(os.path.join(data_path, 'movies.txt'), sep='\t', encoding='utf-8')
@@ -50,7 +34,16 @@ castings_df = pd.read_csv(os.path.join(data_path, 'castings.csv'), encoding='utf
 countries_df = pd.read_csv(os.path.join(data_path, 'countries.csv'), encoding='utf-8')
 genres_df = pd.read_csv(os.path.join(data_path, 'genres.csv'), encoding='utf-8')
 
-# 기본 데이터 정제
+
+def read_data(data_path):
+    df = pd.read_csv(os.path.join(data_path, 'rates.csv'))
+    train_df, val_df = train_test_split(df, test_size=0.2, random_state=1234, shuffle=True)
+    return train_df, val_df
+
+#============================================================================================================================================
+
+
+# 데이터 정제
 genres = [(list(set(x['movie'].values))[0], '/'.join(x['genre'].values)) for index, x in genres_df.groupby('movie')]
 combined_genres_df = pd.DataFrame(data=genres, columns=['movie', 'genres'])
 combined_genres_df = combined_genres_df.set_index('movie')
@@ -76,7 +69,7 @@ class DatasetLoader:
     def __init__(self, data_path):
         self.train_df, val_temp_df = read_data(data_path)
         self.min_rating = min(self.train_df.rate)
-        self.max_rating = self.train_df.rate.max()
+        self.max_rating = max(self.train_df.rate)
         self.unique_users = self.train_df.user.unique()
         self.num_users = len(self.unique_users)
         self.user_to_index = {original: idx for idx, original in enumerate(self.unique_users)}
@@ -241,8 +234,13 @@ def model_train(ds, config):
 
 dataset = DatasetLoader(data_path)
 
+
+#============================================================================================================================================
+
+
 # 파라미터 조정
 config = {
+    
   "num_factors": 30,
   "hidden_layers": [70, 35, 18],
   "embedding_dropout": 0.05,
@@ -253,8 +251,55 @@ config = {
   "num_epochs": 5,
   "total_patience": 30,
   "save_path": "params.data"
-}
+  
+            }
 
 
+#============================================================================================================================================
+
+
+# 모델 실행
 model_train(dataset, config)
+
+
+#============================================================================================================================================
+
+
+def model_valid(user_id_list, movie_id_list, data_path):
+    dataset = DatasetLoader(data_path)
+    processed_test_input_df = pd.DataFrame({
+        'user_id': [dataset.user_to_index[x] for x in user_id_list],
+        'movie_id': [dataset.movie_to_index[x] for x in movie_id_list]
+    })
+
+    # 학습한 모델 load하기 
+    my_model = FFENN(dataset.num_users, dataset.num_movies,
+                       config['hidden_layers'], config['dropouts'], config['num_factors'], config['embedding_dropout'])
+    my_model.load_state_dict(torch.load('params.data'))
+    prediction_outputs = my_model.predict(users=torch.LongTensor(processed_test_input_df.user_id.values),
+                     movies=torch.LongTensor(processed_test_input_df.movie_id.values))
+
+    return prediction_outputs
+
+
+
+#============================================================================================================================================
+# 결과 확인
+
+movie_id_list = [10253, 10102, 10007]
+user_id = 11242
+user_id_list = [user_id] * len(movie_id_list)
+pred_results = [float(x) for x in model_valid(user_id_list, movie_id_list, data_path)]
+
+result_df = pd.DataFrame(
+    {
+    'userId': user_id_list,
+    'movieId': movie_id_list,
+    # 'movieName': [movieName_dict[x] for x in movie_id_list],
+    # 'genres': [genres_dict[x] for x in movie_id_list],
+    'pred_ratings': pred_results
+    }   
+)
+
+result_df.sort_values(by='pred_ratings', ascending=False)
 # %%
