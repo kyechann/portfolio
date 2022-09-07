@@ -15,3 +15,6 @@ Longformer는 문장 길이가 4096으로 KoBART에 비하면 상당히 긴 것�
 <<폴더 소개>>
 LED_KoBART 폴더 : 모델 생성하고 학습을 진행하여 구현한 초기 폴더
 LED_KoBART pytorch-lightning&MLOps : 기존의 코드를 Pytorch-lightning으로 바꿨으며, WanDB, Mlflow, Tensorboard로 학습을 tracking하고 Loss 등을 시각화하여 보여주는 것을 구현하였다.
+
+
+추후 다중 문서 요약까지 가능하도록 진행 예정
