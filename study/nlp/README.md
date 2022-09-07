@@ -1,6 +1,4 @@
-# 포트폴리오
-
-LED_KoBART 모델
+#LED_KoBART 모델
 
 KoBART 모델은 한국어 특화의 딥러닝 요약모델이다.
 생성 및 요약으로는 Decoder 기반의 모델로 뉴스 등 다양한 글의 요약으로는 KoBART만한 모델이 없다.
