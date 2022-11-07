@@ -24,7 +24,7 @@ from transformers import BartForConditionalGeneration, BartConfig, LEDTokenizerF
 from transformers import PreTrainedTokenizerFast
 from transformers.models.bart.modeling_bart import BartLearnedPositionalEmbedding
 from transformers.models.longformer.modeling_longformer import LongformerSelfAttention
-from Library.bart_to_long import LongformerEncoderDecoderForConditionalGeneration
+from Library.bart_to_long import *
 
 
 from torchinfo import summary
@@ -33,8 +33,9 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset
-tokenizer = LEDTokenizerFast.from_pretrained("../LED_KoBART/model")
 
+tokenizer = LEDTokenizerFast.from_pretrained("../LED_KoBART/model")
+max_seq_len = 4096
 # 데이터 샘플 추출
 def sampling_func(data, sample_pct):
     np.random.seed(123)
@@ -54,8 +55,8 @@ class SummaryDataset(Dataset):
         self.bos_token = '<s>'
         self.eos_token = '</s>'
         self.max_seq_len = max_seq_len
-        
-        self.tokenizer = tokenizer
+        self.path = '../LED_KoBART/model'
+        self.tokenizer = PreTrainedTokenizerFast.from_pretrained(self.path)
 
     def __len__(self):
         return self.dataframe.shape[0]
@@ -98,3 +99,33 @@ class SummaryDataset(Dataset):
                 'decoder_attention_mask': np.array(decoder_attention_mask[:1024], dtype=np.float_),
                 'labels': np.array(labels[:1024], dtype=np.int_)}
         
+
+class KobartLedDataModule(pl.LightningDataModule):
+    def __init__(self, train_data, val_data, tokenizer, batch_size, num_workers):
+        super().__init__()
+        self.train_data = pd.read_csv('../LED_KoBART/data/train_data_new.csv', encoding='utf-8', index_col = False)
+        self.val_data = pd.read_csv('../LED_KoBART/data/val_data.csv_new.csv', encoding='utf-8', index_col = False)
+        self.max_seq_len = max_seq_len
+        self.tokenizer = tokenizer
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+
+    def setup(self, stage):
+        self.set_train = SummaryDataset(self.train_data, self.max_seq_len , self.tokenizer)
+        self.set_val = SummaryDataset(self.val_data, self.max_seq_len , self.tokenizer)
+
+    def train_dataloader(self):
+        train = DataLoader(self.set_train, batch_size = self.batch_size,
+                                       num_workers = self.num_workers, shuffle = True)
+        return train
+    
+    def val_dataloader(self):
+        val = DataLoader(self.set_val, batch_size = self.batch_size,
+                                       num_workers = self.num_workers)
+        return val
+
+    def test_dataloader(self):
+        test = DataLoader(self.set_val, batch_size = self.batch_size,
+                                       num_workers = self.num_workers, shuffle = True)
+        return test
