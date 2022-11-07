@@ -10,7 +10,7 @@
     2. exchange :희망 화폐 환율을 알려주는 아주 간단한 프로젝트 코드
     
     3. nlp : 현재 업무하면서 기술 개발에 필요한 딥러닝 모델 구현한 코드
-        - LED_KoBART : KoBART 모델의 단점인 짧은 Input size를 Longformer로 확장시킨 모델, 추가 코드 수정 중
+        - LED_KoBART : KoBART 모델의 단점인 짧은 Input size를 Longformer로 확장시킨 모델로 Pytorch에서 Pytorch-Lightning으로 변환 완료
 
     4. recommand : 2022년 1월에 개인적으로 공부했던 추천 시스템, 궁극적으로 자연어처리와 추천 시스템을 융합한 모델 구현하는 것이 목표기 때문에 지속적으로 업데이트 예정
 
